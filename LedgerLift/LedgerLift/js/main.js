@@ -81,26 +81,32 @@ document.addEventListener('DOMContentLoaded', () => {
         // Show AI summary (simulate for now)
         if (analyzing) analyzing.classList.add('hidden');
         if (aiSummary) aiSummary.classList.remove('hidden');
-        // Populate errors table
+        // Populate errors table for all sheets
         const errorTable = document.getElementById('error-table');
         if (errorTable && data.errors) {
           const tbody = errorTable.querySelector('tbody');
           tbody.innerHTML = '';
-          // Show errors for the first sheet (or all sheets if you want)
           const sheetNames = Object.keys(data.errors);
-          if (sheetNames.length > 0) {
-            const errors = data.errors[sheetNames[0]];
-            if (errors.length === 0) {
-              const tr = document.createElement('tr');
-              tr.innerHTML = '<td colspan="2" class="text-center text-gray-500 py-2">No errors found!</td>';
-              tbody.appendChild(tr);
-            } else {
+          let anyErrors = false;
+          sheetNames.forEach(sheet => {
+            const errors = data.errors[sheet];
+            if (errors.length > 0) {
+              anyErrors = true;
+              // Add a row for the sheet name
+              const sheetRow = document.createElement('tr');
+              sheetRow.innerHTML = `<td colspan="2" class="font-bold bg-blue-50">${sheet}</td>`;
+              tbody.appendChild(sheetRow);
               errors.forEach(err => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td class="py-2 px-4">${err.row ?? ''}</td><td class="py-2 px-4">${err.issue ?? ''}</td>`;
                 tbody.appendChild(tr);
               });
             }
+          });
+          if (!anyErrors) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="2" class="text-center text-gray-500 py-2">No errors found!</td>';
+            tbody.appendChild(tr);
           }
         }
       } catch (err) {
