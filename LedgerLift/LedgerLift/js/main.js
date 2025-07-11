@@ -22,6 +22,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileInput = document.getElementById('file-input');
   const fileName = document.getElementById('file-name');
   const nextBtn = document.getElementById('to-step-2');
+  const analyzing = document.getElementById('analyzing');
+  const aiSummary = document.getElementById('ai-summary');
+  const aiError = document.getElementById('ai-error');
+
+  let uploadedFile = null;
 
   if (dropZone && fileInput && nextBtn) {
     dropZone.addEventListener('click', () => fileInput.click());
@@ -40,20 +45,49 @@ document.addEventListener('DOMContentLoaded', () => {
         fileInput.files = e.dataTransfer.files;
         fileName.textContent = fileInput.files[0].name;
         nextBtn.disabled = false;
+        uploadedFile = fileInput.files[0];
       }
     });
     fileInput.addEventListener('change', () => {
       if (fileInput.files.length) {
         fileName.textContent = fileInput.files[0].name;
         nextBtn.disabled = false;
+        uploadedFile = fileInput.files[0];
       }
     });
-    nextBtn.addEventListener('click', () => {
-      showStep(1);
+    nextBtn.addEventListener('click', async () => {
+      if (!uploadedFile) return;
+      showStep(1); // Show analyzing step
+      if (aiError) aiError.classList.add('hidden');
+      if (aiSummary) aiSummary.classList.add('hidden');
+      if (analyzing) analyzing.classList.remove('hidden');
+      // Upload file to backend
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      try {
+        const res = await fetch('/upload', {
+          method: 'POST',
+          body: formData
+        });
+        if (!res.ok) {
+          throw new Error('Upload failed: ' + res.statusText);
+        }
+        const data = await res.json();
+        // Show AI summary (simulate for now)
+        if (analyzing) analyzing.classList.add('hidden');
+        if (aiSummary) aiSummary.classList.remove('hidden');
+        // TODO: Populate mapping-summary and errors from data
+      } catch (err) {
+        if (analyzing) analyzing.classList.add('hidden');
+        if (aiError) {
+          aiError.textContent = 'Error: ' + err.message;
+          aiError.classList.remove('hidden');
+        }
+      }
     });
   }
 
-  // Step 2: Analyze (simulate)
+  // Step 2: Analyze (real upload now)
   const toStep3Btn = document.getElementById('to-step-3');
   if (toStep3Btn) {
     toStep3Btn.addEventListener('click', () => showStep(2));
