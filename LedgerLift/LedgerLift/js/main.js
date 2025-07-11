@@ -69,10 +69,15 @@ document.addEventListener('DOMContentLoaded', () => {
           method: 'POST',
           body: formData
         });
-        if (!res.ok) {
-          throw new Error('Upload failed: ' + res.statusText);
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          throw new Error('Upload failed: Invalid JSON response');
         }
-        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || ('Upload failed: ' + res.statusText));
+        }
         // Show AI summary (simulate for now)
         if (analyzing) analyzing.classList.add('hidden');
         if (aiSummary) aiSummary.classList.remove('hidden');

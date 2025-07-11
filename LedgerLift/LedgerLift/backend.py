@@ -67,6 +67,13 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 app.add_middleware(SecurityHeadersMiddleware)
 
+class RequestLoggerMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        print(f"Request: {request.method} {request.url.path}")
+        response = await call_next(request)
+        return response
+app.add_middleware(RequestLoggerMiddleware)
+
 USE_VITE_DEV_SERVER = os.environ.get('USE_VITE_DEV_SERVER', '0') == '1'
 if not USE_VITE_DEV_SERVER:
     vite_dist = os.path.join(os.path.dirname(__file__), 'dist')
