@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script>
+    // Early dark mode script: runs before Tailwind loads
+    (function() {
+      const darkPref = localStorage.getItem('ledgerlift-dark');
+      if (darkPref === '1') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LedgerLift – AI Bookkeeping for Small Businesses</title>
+  <link href="https://fonts.googleapis.com/css?family=Archivo:400,600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@heroicons/vue@2.0.16/dist/heroicons.min.js"></script>
+  <script>
+    window.tailwind = window.tailwind || {};
+    window.tailwind.config = {
+      darkMode: 'class',
+    };
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body, .font-archivo {
+      font-family: 'Archivo', Arial, sans-serif !important;
+    }
+    .fade-enter {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    .fade-enter-active {
+      opacity: 1;
+      transform: translateY(0);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+    .fade-leave {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .fade-leave-active {
+      opacity: 0;
+      transform: translateY(-20px);
+      transition: opacity 0.4s, transform 0.4s;
+    }
+  </style>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Transform messy spreadsheets into professional double-entry accounting with AI. Save 5-10 hours per month-end close.">
+  <meta name="keywords" content="bookkeeping, accounting, AI, spreadsheet, QuickBooks">
+  <meta property="og:title" content="LedgerLift - AI Bookkeeping Solution">
+  <meta property="og:description" content="AI-powered bookkeeping that saves time and prevents errors">
+  <link rel="canonical" href="https://ledgerlift.com">
+  <!-- Security headers for best practices (for production, set these at the reverse proxy) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data:; connect-src 'self' http://localhost:8000;">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <!-- For all external links, use rel="noopener noreferrer" -->
+  <!-- Example: <a href="https://example.com" target="_blank" rel="noopener noreferrer">External</a> -->
+</head>
+<body class="bg-gradient-to-br from-[#f8fafc] via-[#e0e7ef] to-[#cbd5e1] min-h-screen font-archivo transition-colors duration-300">
+  <header class="text-center mb-10">
+    <div class="flex flex-col items-center gap-4 mb-8">
+      <div class="text-5xl md:text-6xl font-extrabold text-blue-700 drop-shadow-lg tracking-tight leading-tight">
+        LedgerLift
+      </div>
+      <div class="text-xl md:text-2xl text-gray-700 font-semibold max-w-2xl mx-auto">
+        AI-Powered Bookkeeping for Solo CPAs & Small Sellers
+      </div>
+      <div class="flex flex-col md:flex-row items-center gap-4 mt-4">
+        <button class="cta-btn bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-3 rounded-xl shadow-xl font-bold text-lg transition-all duration-200 animate-pulse flex items-center gap-2 ring-2 ring-blue-400/30 focus:outline-none focus:ring-4 focus:ring-blue-300" onclick="scrollToWorkflow()" aria-label="Try LedgerLift Free">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+          Try LedgerLift Free
+        </button>
+        <span class="text-sm text-gray-500 font-medium">No signup required</span>
+      </div>
+    </div>
+    <div class="w-full flex flex-col md:flex-row items-center justify-center gap-8 mt-8">
+      <div class="flex-1 max-w-md">
+        <div class="bg-white rounded-2xl shadow-xl p-6 flex flex-col gap-4 border border-blue-100">
+          <h2 class="text-xl font-bold text-gray-900">Upload Your Spreadsheet</h2>
+          <p class="text-base text-gray-700">Upload your Excel or CSV file. LedgerLift will analyze and map your data automatically.</p>
+          <div id="drop-zone" class="flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-xl p-8 bg-blue-50 hover:bg-blue-100 transition cursor-pointer shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Drop or select your file">
+            <svg class="h-12 w-12 text-blue-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16v-4a4 4 0 018 0v4m-4 4v-4m0 0V4m0 8H4m8 0h8" /></svg>
+            <span class="text-blue-600 font-semibold mb-2">Drag & Drop your file here</span>
+            <span class="text-blue-500 text-sm mb-2">or click to select</span>
+            <input type="file" id="file-input" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" class="hidden" aria-hidden="true" />
+            <div id="file-name" class="mt-2 text-sm text-blue-600"></div>
+          </div>
+          <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200 mt-4" id="to-step-2" disabled aria-label="Next: Analyze">Next: Analyze</button>
+        </div>
+      </div>
+      <div class="flex-1 max-w-lg">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-lg p-6 border border-blue-100">
+          <h3 class="text-lg font-bold text-blue-700 mb-2">See the Difference</h3>
+          <div class="flex flex-col md:flex-row gap-4">
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-gray-500 mb-1">Before</div>
+              <table class="w-full text-xs bg-white rounded-lg border border-gray-200 mb-2">
+                <thead class="bg-red-50">
+                  <tr><th class="px-2 py-1 text-left text-red-600">Date</th><th class="px-2 py-1 text-left text-red-600">Desc</th><th class="px-2 py-1 text-left text-red-600">Amount</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="px-2 py-1">3/1/24</td><td class="px-2 py-1">Venmo</td><td class="px-2 py-1">$100</td></tr>
+                  <tr><td class="px-2 py-1">3/1/24</td><td class="px-2 py-1">Venmo</td><td class="px-2 py-1">$100</td></tr>
+                  <tr><td class="px-2 py-1">3/2/24</td><td class="px-2 py-1">Amazon</td><td class="px-2 py-1">$-</td></tr>
+                </tbody>
+              </table>
+              <div class="text-xs text-red-500">• Duplicates • Missing values • No account mapping</div>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-semibold text-gray-500 mb-1">After</div>
+              <table class="w-full text-xs bg-white rounded-lg border border-gray-200 mb-2">
+                <thead class="bg-green-50">
+                  <tr><th class="px-2 py-1 text-left text-green-600">Date</th><th class="px-2 py-1 text-left text-green-600">Account</th><th class="px-2 py-1 text-left text-green-600">Debit</th><th class="px-2 py-1 text-left text-green-600">Credit</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="px-2 py-1">3/1/24</td><td class="px-2 py-1">Cash</td><td class="px-2 py-1">$100</td><td class="px-2 py-1">-</td></tr>
+                  <tr><td class="px-2 py-1">3/2/24</td><td class="px-2 py-1">Sales</td><td class="px-2 py-1">-</td><td class="px-2 py-1">$100</td></tr>
+                </tbody>
+              </table>
+              <div class="text-xs text-green-600">• Cleaned • Mapped • Double-entry ready</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+  <nav id="workflow" class="mb-12">
+    <ol class="flex justify-between items-center bg-white/90 rounded-2xl shadow-lg px-4 py-5 relative border border-gray-200">
+      <div class="absolute left-0 top-1/2 w-full h-2 bg-blue-100 rounded-full -z-10"></div>
+      <div id="progress-bar" class="absolute left-0 top-1/2 h-2 bg-blue-500 rounded-full z-0 transition-all duration-500" style="width: 0%; transform: translateY(-50%);" aria-hidden="true"></div>
+      <li class="flex flex-col items-center flex-1 stepper-step transition-all duration-300">
+        <div class="stepper-circle bg-blue-100 text-blue-600 rounded-full p-3 mb-2 ring-2 ring-blue-400/40 shadow-md transition-all duration-300">
+          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10V6a5 5 0 0110 0v4M12 16v-4" /></svg>
+        </div>
+        <span class="text-xs font-semibold text-gray-800">1. Upload</span>
+      </li>
+      <li class="flex flex-col items-center flex-1 stepper-step transition-all duration-300">
+        <div class="stepper-circle bg-blue-100 text-blue-600 rounded-full p-3 mb-2 ring-2 ring-blue-400/40 shadow-md transition-all duration-300">
+          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 018 0v2M9 7h6" /></svg>
+        </div>
+        <span class="text-xs font-semibold text-gray-800">2. AI Mapping</span>
+      </li>
+      <li class="flex flex-col items-center flex-1 stepper-step transition-all duration-300">
+        <div class="stepper-circle bg-blue-100 text-blue-600 rounded-full p-3 mb-2 ring-2 ring-blue-400/40 shadow-md transition-all duration-300">
+          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 10-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+        </div>
+        <span class="text-xs font-semibold text-gray-800">3. Review Errors</span>
+      </li>
+      <li class="flex flex-col items-center flex-1 stepper-step transition-all duration-300">
+        <div class="stepper-circle bg-blue-100 text-blue-600 rounded-full p-3 mb-2 ring-2 ring-blue-400/40 shadow-md transition-all duration-300">
+          <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h2l1 2h13l1-2h2M7 21h10a2 2 0 002-2v-5a2 2 0 00-2-2H7a2 2 0 00-2 2v5a2 2 0 002 2z" /></svg>
+        </div>
+        <span class="text-xs font-semibold text-gray-800">4. Export</span>
+      </li>
+    </ol>
+  </nav>
+  <main role="main" aria-label="Main content">
+    <section id="step-1" class="step-panel transition-all duration-500 ease-in-out opacity-100 block">
+      <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+        <h2 class="text-2xl font-bold text-gray-900">Step 1: Upload Your Spreadsheet</h2>
+        <p class="text-lg text-gray-700">Upload your Excel or CSV file. LedgerLift will analyze and map your data automatically.</p>
+        <div id="drop-zone" class="flex flex-col items-center justify-center border-2 border-dashed border-blue-400 rounded-xl p-8 bg-blue-50 hover:bg-blue-100 transition cursor-pointer shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-400" aria-label="Drop or select your file">
+          <svg class="h-12 w-12 text-blue-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16v-4a4 4 0 018 0v4m-4 4v-4m0 0V4m0 8H4m8 0h8" /></svg>
+          <span class="text-blue-600 font-semibold mb-2">Drag & Drop your file here</span>
+          <span class="text-blue-500 text-sm mb-2">or click to select</span>
+          <input type="file" id="file-input" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" class="hidden" aria-hidden="true" />
+          <div id="file-name" class="mt-2 text-sm text-blue-600"></div>
+        </div>
+        <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200" id="to-step-2" disabled aria-label="Next: Analyze">Next: Analyze</button>
+      </div>
+    </section>
+    <section id="step-2" class="step-panel transition-all duration-500 ease-in-out opacity-0 hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+        <h2 class="text-2xl font-bold text-gray-900">Step 2: AI Mapping & Cleaning</h2>
+        <div id="analyzing" class="flex flex-col items-center justify-center py-12">
+          <span class="text-2xl font-semibold text-blue-600">Analyzing your spreadsheet with AI...</span>
+          <div class="loader mt-4"></div>
+          <div class="mt-4 text-sm text-blue-600">
+            <div id="progress-text">Processing data...</div>
+            <div class="w-64 bg-blue-100 rounded-full h-2 mt-2">
+              <div id="progress-bar-fill" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+        </div>
+        <div id="ai-summary" class="hidden">
+          <p class="text-lg font-medium text-green-700 mb-4"><strong>AI has mapped your data to double-entry journal entries.</strong></p>
+          <ul id="mapping-summary" class="list-none p-0 mb-4"></ul>
+          <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200 mt-4" id="to-step-3" aria-label="Next: Review Errors">Next: Review Errors</button>
+        </div>
+        <div id="ai-error" class="text-red-600 text-lg mt-4 hidden"></div>
+      </div>
+    </section>
+    <section id="step-3" class="step-panel transition-all duration-500 ease-in-out opacity-0 hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+        <h2 class="text-2xl font-bold text-gray-900">Step 3: Review Flagged Errors</h2>
+        <p class="text-lg text-gray-700">AI has flagged the following potential issues in your data:</p>
+        <div class="overflow-x-auto">
+          <table id="error-table" class="min-w-full border-collapse border border-gray-200 rounded-xl">
+            <thead class="bg-blue-100">
+              <tr>
+                <th class="py-2 px-4 text-left text-sm font-semibold text-blue-600">Row</th>
+                <th class="py-2 px-4 text-left text-sm font-semibold text-blue-600">Issue</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="custom-rule-section" class="mt-6">
+          <h3 class="text-xl font-bold mb-3 text-gray-900">Add Custom Error Rule</h3>
+          <div class="flex flex-col sm:flex-row items-center gap-3 flex-wrap">
+            <select id="custom-rule-column" class="block w-full sm:w-auto text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100 focus:ring-blue-500 focus:border-blue-500 p-2.5" aria-label="Select column for custom rule">
+              <option value="">Select Column</option>
+            </select>
+            <select id="custom-rule-condition" class="block w-full sm:w-auto text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100 focus:ring-blue-500 focus:border-blue-500 p-2.5" aria-label="Condition for custom rule">
+              <option value=">">&gt;</option>
+              <option value="<">&lt;</option>
+              <option value=">=">&ge;</option>
+              <option value="<=">&le;</option>
+              <option value="==">=</option>
+              <option value="!=">!=</option>
+              <option value="empty">is empty</option>
+              <option value="notempty">is not empty</option>
+            </select>
+            <input type="text" id="custom-rule-value" placeholder="Value (if needed)" class="block w-full sm:w-auto text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-100 focus:ring-blue-500 focus:border-blue-500 p-2.5" aria-label="Value for custom rule" />
+            <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200" id="add-custom-rule" aria-label="Add custom rule">Add Rule</button>
+          </div>
+          <ul id="custom-rule-list" class="list-none p-0 mt-4"></ul>
+        </div>
+        <div class="mt-6 flex flex-wrap items-center gap-4">
+          <input type="checkbox" id="fix-balance" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-blue-500 rounded" aria-label="Auto-balance rounding errors" />
+          <label for="fix-balance" class="ml-2 text-lg text-gray-700">Auto-balance rounding errors</label>
+          <input type="checkbox" id="fix-missing" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-blue-500 rounded ml-6" aria-label="Fill missing values with 0" />
+          <label for="fix-missing" class="ml-2 text-lg text-gray-700">Fill missing values with 0</label>
+          <input type="checkbox" id="fix-duplicates" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-blue-500 rounded ml-6" aria-label="Remove duplicate rows" />
+          <label for="fix-duplicates" class="ml-2 text-lg text-gray-700">Remove duplicate rows</label>
+          <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200 ml-6" id="bulk-fix-btn" aria-label="Apply bulk fixes">Apply Bulk Fixes</button>
+        </div>
+        <div id="bulk-fix-preview-modal" class="hidden fixed inset-0 bg-blue-100/80 flex items-center justify-center z-50 transition-all duration-300" aria-label="Bulk fix preview modal">
+          <div class="bg-white/90 p-6 rounded-2xl max-w-md w-full max-h-full overflow-y-auto shadow-xl relative">
+            <button id="close-bulk-fix-preview" class="absolute top-2 right-2 text-blue-600 hover:text-blue-400 focus:outline-none" aria-label="Close preview modal">
+              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <h3 class="text-2xl font-bold mb-4 text-gray-900">Bulk Fix Preview</h3>
+            <div id="bulk-fix-preview-content" class="mt-3"></div>
+            <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200 mt-4" id="confirm-bulk-fix" aria-label="Confirm and apply fixes">Confirm & Apply Fixes</button>
+          </div>
+        </div>
+        <div id="bulk-fix-summary" class="text-blue-600 text-lg mt-4"></div>
+        <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200 mt-4" id="to-step-4" aria-label="Next: Export to QuickBooks">Next: Export to QuickBooks</button>
+      </div>
+    </section>
+    <section id="step-4" class="step-panel transition-all duration-500 ease-in-out opacity-0 hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 flex flex-col gap-6">
+        <h2 class="text-2xl font-bold text-gray-900">Step 4: Export to QuickBooks</h2>
+        <p class="text-lg text-gray-700">Your data is ready! Export your cleaned, mapped journal entries directly to QuickBooks.</p>
+        <div class="flex flex-col md:flex-row md:items-center md:gap-6 gap-4 w-full">
+          <div class="flex flex-row flex-wrap gap-4 w-full md:w-auto">
+            <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200" id="export-btn" aria-label="Export now">Export Now</button>
+            <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200" id="download-csv-btn" aria-label="Download CSV">Download CSV</button>
+            <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200" id="download-report-btn" aria-label="Download report">Download Report</button>
+          </div>
+          <div class="flex flex-row gap-2 w-full md:w-auto items-center">
+            <input type="email" id="email-input" placeholder="Enter your email" class="block w-full md:w-64 text-sm text-gray-900 border border-gray-300 rounded-l-lg bg-gray-100 focus:ring-blue-500 focus:border-blue-500 p-2.5" aria-label="Enter email" />
+            <button class="cta-btn bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg shadow-md font-semibold text-lg transition-all duration-200" id="send-email-btn" aria-label="Send email">Send Email</button>
+          </div>
+        </div>
+        <span id="email-status" class="text-sm text-green-600 mt-4 hidden"></span>
+        <div id="export-success" class="text-green-600 text-lg mt-4 hidden">Export successful! Your data is now in QuickBooks.</div>
+      </div>
+    </section>
+  </main>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h2 class="text-3xl font-bold text-gray-900 mb-4">The Problem</h2>
+    <p class="text-lg text-gray-700 mb-6">Are you a solo CPA or Etsy-size seller spending hours fixing DIY Excel ledgers that break every month?</p>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h2 class="text-3xl font-bold text-gray-900 mb-4">Our Solution</h2>
+    <p class="text-lg text-gray-700 mb-6">LedgerLift lets you upload any messy spreadsheet. Our AI maps your data to a real double-entry journal, flags errors, and exports to QuickBooks.</p>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h2 class="text-3xl font-bold text-gray-900 mb-4">Benefits</h2>
+    <ul class="list-none p-0">
+      <li class="text-lg text-gray-700 mb-3 flex items-center"><span class="text-green-600 mr-2">✓</span> Save 5-10 hours per close</li>
+      <li class="text-lg text-gray-700 mb-3 flex items-center"><span class="text-green-600 mr-2">✓</span> Prevent audit fines</li>
+      <li class="text-lg text-gray-700 mb-3 flex items-center"><span class="text-green-600 mr-2">✓</span> No more manual fixing or broken formulas</li>
+    </ul>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h2 class="text-3xl font-bold text-gray-900 mb-4">How It Works</h2>
+    <div class="how-steps flex flex-col gap-4">
+      <div class="how-step bg-blue-100 p-4 rounded-lg shadow-md">
+        <div class="flex items-center text-lg text-gray-700 font-semibold mb-2">
+          <svg class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
+          Upload your spreadsheet
+        </div>
+        <p class="text-gray-600 text-base">Upload your Excel or CSV file to LedgerLift.</p>
+      </div>
+      <div class="how-step bg-blue-100 p-4 rounded-lg shadow-md">
+        <div class="flex items-center text-lg text-gray-700 font-semibold mb-2">
+          <svg class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
+          AI maps and cleans your data
+        </div>
+        <p class="text-gray-600 text-base">Our AI analyzes your data and maps it to a double-entry journal, flagging any potential errors.</p>
+      </div>
+      <div class="how-step bg-blue-100 p-4 rounded-lg shadow-md">
+        <div class="flex items-center text-lg text-gray-700 font-semibold mb-2">
+          <svg class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
+          Review flagged errors
+        </div>
+        <p class="text-gray-600 text-base">Review the flagged errors and apply any necessary corrections or custom rules.</p>
+      </div>
+      <div class="how-step bg-blue-100 p-4 rounded-lg shadow-md">
+        <div class="flex items-center text-lg text-gray-700 font-semibold mb-2">
+          <svg class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
+          Export to QuickBooks
+        </div>
+        <p class="text-gray-600 text-base">Once your data is clean and mapped, export it directly to QuickBooks for seamless integration.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h2 class="text-3xl font-bold text-gray-900 mb-4">What Users Say</h2>
+    <div class="testimonials text-lg text-gray-700 italic border-l-4 border-blue-400 pl-4 mb-6">“LedgerLift saved me hours every month and caught errors I never would have found!” – Jane, Solo CPA</div>
+    <div class="testimonials text-lg text-gray-700 italic border-l-4 border-blue-400 pl-4 mb-6">“I used to dread month-end. Now it’s a breeze.” – Mike, Etsy Seller</div>
+  </section>
+
+  <section class="w-full bg-blue-50 py-4 flex flex-col md:flex-row items-center justify-center gap-6 mb-8 border-b border-blue-100">
+    <div class="flex items-center gap-4">
+      <span class="text-gray-600 font-semibold text-sm">Trusted by CPAs & Small Businesses</span>
+      <div class="flex gap-2">
+        <svg class="h-6 w-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></svg>
+        <svg class="h-6 w-6 text-blue-300" fill="currentColor" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" /></svg>
+        <svg class="h-6 w-6 text-blue-200" fill="currentColor" viewBox="0 0 24 24"><polygon points="12,2 22,22 2,22" /></svg>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <svg class="h-5 w-5 text-green-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2l4-4" /></svg>
+    <span class="text-xs text-gray-500">100% privacy – your data is never stored</span>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+  <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center border border-blue-100">
+    <svg class="h-10 w-10 text-blue-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8a9 9 0 100-18 9 9 0 000 18z" /></svg>
+    <div class="font-bold text-lg mb-2">AI-Powered Mapping</div>
+    <div class="text-gray-600 text-base">Automatically maps messy ledgers to double-entry journal entries.</div>
+  </div>
+  <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center border border-blue-100">
+    <svg class="h-10 w-10 text-green-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+    <div class="font-bold text-lg mb-2">Error Detection</div>
+    <div class="text-gray-600 text-base">Flags duplicates, missing values, and formula errors before export.</div>
+  </div>
+  <div class="bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center border border-blue-100">
+    <svg class="h-10 w-10 text-indigo-500 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3 0 1.657 1.343 3 3 3s3-1.343 3-3c0-1.657-1.343-3-3-3zm0 13c-4.418 0-8-3.582-8-8 0-4.418 3.582-8 8-8s8 3.582 8 8c0 4.418-3.582 8-8 8z" /></svg>
+    <div class="font-bold text-lg mb-2">QuickBooks Export</div>
+    <div class="text-gray-600 text-base">Export cleaned data directly to QuickBooks or as CSV/Excel.</div>
+  </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+  <h2 class="text-3xl font-bold text-gray-900 mb-4">What Users Say</h2>
+  <div class="testimonials text-lg text-gray-700 italic border-l-4 border-blue-400 pl-4 mb-6">“LedgerLift saved me hours every month and caught errors I never would have found!” – Jane, Solo CPA</div>
+  <div class="testimonials text-lg text-gray-700 italic border-l-4 border-blue-400 pl-4 mb-6">“I used to dread month-end. Now it’s a breeze.” – Mike, Etsy Seller</div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded">
+      <strong>Welcome to LedgerLift!</strong> Need help? See the onboarding tips below or check the README for more info.
+    </div>
+    <ul class="list-disc ml-8 text-gray-700">
+      <li>Step 1: Upload your CSV or Excel file using the hero section above.</li>
+      <li>Step 2: Review flagged errors and apply fixes or custom rules.</li>
+      <li>Step 3: Export your cleaned data or send a summary report by email.</li>
+      <li>Need demo data? Use the sample files provided in the repo.</li>
+    </ul>
+  </section>
+
+<footer class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center text-gray-600 text-lg flex flex-col gap-2 items-center">
+  <div>&copy; 2024 LedgerLift. All rights reserved.</div>
+  <div class="flex gap-4 text-sm">
+    <a href="#" class="underline hover:text-blue-600">Contact</a>
+    <a href="#" class="underline hover:text-blue-600">Privacy</a>
+    <span class="inline-flex items-center gap-1 text-green-500"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M9 12l2 2l4-4" /></svg>100% Secure</span>
+  </div>
+  <div class="text-xs text-gray-400 mt-2">This site uses analytics and error monitoring for quality and security. See Privacy for details.</div>
+</footer>
+  <div id="global-loader" class="hidden fixed inset-0 bg-blue-100/80 flex items-center justify-center z-40">
+    <div class="loader h-12 w-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+  <!-- Ensure all scripts are loaded with async or defer for performance -->
+  <script type="module" src="js/main.js" defer></script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=UA-XXXXXXXXX-X"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'UA-XXXXXXXXX-X'); // Replace with your GA tracking ID
+  </script>
+</body>
+</html> 
