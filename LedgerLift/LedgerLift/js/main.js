@@ -172,9 +172,82 @@ document.addEventListener('DOMContentLoaded', () => {
             });
           });
         }
-        // Optionally, update the errors table again (could re-fetch errors)
+        // Re-fetch errors and update table
+        // Simulate by reloading the page (or you can re-upload the file if you store it)
+        window.location.reload();
       } catch (err) {
         alert('Bulk fix failed: ' + (err.message || err));
+      }
+    });
+  }
+
+  // Export Now and Download Report
+  const exportBtn = document.getElementById('export-btn');
+  const downloadReportBtn = document.getElementById('download-report-btn');
+  function downloadReport() {
+    fetch('/financial-report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sheet: null, errors: [], fixes: [], summary: [] })
+    })
+      .then(res => res.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'financial_report.html';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      });
+  }
+  if (exportBtn) exportBtn.addEventListener('click', downloadReport);
+  if (downloadReportBtn) downloadReportBtn.addEventListener('click', downloadReport);
+
+  // Download CSV
+  const downloadCsvBtn = document.getElementById('download-csv-btn');
+  if (downloadCsvBtn) {
+    downloadCsvBtn.addEventListener('click', () => {
+      fetch('/download-csv')
+        .then(res => res.blob())
+        .then(blob => {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'ledgerlift_export.zip';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        });
+    });
+  }
+
+  // Send Email
+  const sendEmailBtn = document.getElementById('send-email-btn');
+  if (sendEmailBtn) {
+    sendEmailBtn.addEventListener('click', async () => {
+      const emailInput = document.getElementById('email-input');
+      const email = emailInput?.value;
+      if (!email) {
+        alert('Please enter an email address.');
+        return;
+      }
+      const res = await fetch('/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient: email, subject: 'LedgerLift Report', body: 'Your report is ready.' })
+      });
+      const data = await res.json();
+      const status = document.getElementById('email-status');
+      if (data.success) {
+        if (status) {
+          status.textContent = 'Email sent!';
+          status.classList.remove('hidden');
+        }
+      } else {
+        alert('Failed to send email: ' + (data.error || 'Unknown error'));
       }
     });
   }
