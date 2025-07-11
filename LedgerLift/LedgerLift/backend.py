@@ -33,7 +33,7 @@ app = FastAPI()
 static_dir = os.path.join(os.path.dirname(__file__), '.')
 if not ("pytest" in sys.modules or "PYTEST_CURRENT_TEST" in os.environ):
     if os.path.isdir(static_dir):
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+        app.mount("/static", StaticFiles(directory=static_dir, html=True), name="static")
 
 # Explicitly allow your frontend origin (do NOT use "*" with allow_credentials=True)
 origins = [
@@ -220,7 +220,8 @@ def get_sheet(sheet=None):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "LedgerLift backend running"}
+    with open(os.path.join(static_dir, "index.html"), encoding="utf-8") as f:
+        return HTMLResponse(f.read())
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
