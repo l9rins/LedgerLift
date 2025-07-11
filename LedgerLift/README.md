@@ -29,3 +29,40 @@ This is a minimal FastAPI backend for the LedgerLift prototype. It accepts Excel
 
 ---
 This is a prototype. For production, add authentication, error handling, and real AI mapping logic. 
+
+This message means your app **successfully installed all dependencies and started to deploy**, but then crashed because it’s missing a required package:  
+**`python-multipart`**
+
+### Why?
+- FastAPI needs `python-multipart` to handle file uploads and form data (like your `/upload` endpoint).
+- If it’s not in your `requirements.txt`, deployment will fail with this error.
+
+---
+
+## How to Fix
+
+1. **Add `python-multipart` to your `requirements.txt`** (both in the root and in `LedgerLift/requirements.txt` for consistency):
+
+```
+fastapi
+uvicorn
+pandas
+openpyxl
+python-multipart
+```
+
+2. **Commit and push the change:**
+```sh
+git add requirements.txt LedgerLift/requirements.txt
+git commit -m "Add python-multipart to requirements for file upload support"
+git push
+```
+
+3. **Re-deploy on Render.**
+   - Render will automatically rebuild and your app should work!
+
+---
+
+**Summary:**  
+Your app is almost ready! Just add `python-multipart` to your requirements, push, and redeploy.  
+Let me know if you want me to make this change for you! 

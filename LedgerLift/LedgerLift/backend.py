@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 import sys
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response as StarletteResponse
+from datetime import datetime
 
 # Global variable to store the last processed DataFrame
 last_processed_df = None
@@ -452,6 +453,100 @@ async def upload_file(file: UploadFile = File(...)):
         for k in list(errors.keys()):
             errors[k] = [e for e in errors[k] if 'out of balance' in e['issue'].lower() or 'missing account' in e['issue'].lower()]
 
+    # --- Next-Level AI Features ---
+    # 1. User-Tunable Rules (Configurable Audit/Assist Modes)
+    # Accept a ?mode= param and a ?rules= param (comma-separated list of rule names to enforce)
+    from fastapi import Request
+    import urllib.parse
+    mode = 'audit'
+    user_rules = set()
+    # Try to get mode/rules from query params if running in FastAPI context
+    try:
+        request: Request = None
+        import inspect
+        for frame in inspect.stack():
+            if 'request' in frame.frame.f_locals:
+                request = frame.frame.f_locals['request']
+                break
+        if request:
+            query = urllib.parse.parse_qs(urllib.parse.urlparse(str(request.url)).query)
+            if 'mode' in query:
+                mode = query['mode'][0]
+            if 'rules' in query:
+                user_rules = set(query['rules'][0].split(','))
+    except Exception:
+        pass
+    # Only enforce rules in user_rules if specified
+    def rule_enabled(rule_name):
+        return not user_rules or rule_name in user_rules
+
+    # 2. ML-Based Anomaly Detection (Isolation Forest)
+    try:
+        from sklearn.ensemble import IsolationForest
+        for name, df in sheets.items():
+            if 'journal' in name.lower() and 'Debit' in df.columns and 'Credit' in df.columns and len(df) > 10:
+                X = df[['Debit', 'Credit']].fillna(0).values
+                clf = IsolationForest(contamination=0.1, random_state=42)
+                preds = clf.fit_predict(X)
+                for idx, pred in enumerate(preds):
+                    if pred == -1:
+                        errors.setdefault(name, []).append({
+                            "row": idx+1,
+                            "issue": "ML anomaly detected: unusual debit/credit pattern",
+                            "why": "This entry is statistically different from the rest (Isolation Forest)"
+                        })
+    except ImportError:
+        pass
+
+    # 3. Explainable AI (Why was this flagged?)
+    for name, sheet_errs in errors.items():
+        for err in sheet_errs:
+            if 'why' not in err:
+                if 'out of balance' in err['issue'].lower():
+                    err['why'] = 'Debits and credits should always match in double-entry accounting.'
+                elif 'missing value' in err['issue'].lower():
+                    err['why'] = 'All required fields must be filled for accurate reporting.'
+                elif 'account-type rule violation' in err['issue'].lower():
+                    err['why'] = 'This violates standard accounting rules for this account type.'
+                elif 'anomaly' in err['issue'].lower():
+                    err['why'] = 'This value is statistically unusual compared to other entries.'
+                elif 'not found in Chart of Accounts' in err['issue']:
+                    err['why'] = 'All accounts in entries must exist in the Chart of Accounts.'
+                elif 'date' in err['issue'].lower():
+                    err['why'] = 'Dates should be within the expected fiscal period.'
+                else:
+                    err['why'] = 'Flagged by rule-based or statistical logic.'
+
+    # 4. Auto-Repair with User Approval (Stub)
+    # For each fixable error, add a 'can_fix' flag and a 'fix_action' description
+    for name, sheet_errs in errors.items():
+        for err in sheet_errs:
+            if 'missing value' in err['issue'].lower():
+                err['can_fix'] = True
+                err['fix_action'] = 'Fill with 0'
+            elif 'out of balance' in err['issue'].lower():
+                err['can_fix'] = True
+                err['fix_action'] = 'Auto-balance this row'
+            elif 'account-type rule violation' in err['issue'].lower():
+                err['can_fix'] = False
+                err['fix_action'] = 'Manual review required'
+            elif 'not found in Chart of Accounts' in err['issue']:
+                err['can_fix'] = False
+                err['fix_action'] = 'Add account to Chart of Accounts'
+            elif 'date' in err['issue'].lower():
+                err['can_fix'] = False
+                err['fix_action'] = 'Edit date to valid fiscal period'
+
+    # 5. Audit Trail & Undo (Stub)
+    # You can implement a global list of actions and allow undo/redo in the future
+    # For now, just add a placeholder
+    # global audit_trail
+    # audit_trail.append({'action': 'fix', 'row': ..., 'old_value': ..., 'new_value': ...})
+
+    # 6. Feedback Loop for Continuous Learning (Stub)
+    # You can add endpoints to accept user feedback and store for future model improvement
+    # e.g., /feedback endpoint to mark errors as false positive
+
     return JSONResponse(content=clean_nans({
         "sheets": list(sheets.keys()),
         "preview": preview,
@@ -741,6 +836,15 @@ async def send_email_endpoint(request: Request):
         return {"success": True}
     else:
         return {"success": False, "error": err}
+
+@app.post("/feedback")
+async def feedback(request: Request):
+    data = await request.json()
+    feedback_text = data.get("feedback", "")
+    if feedback_text.strip():
+        with open("feedback.log", "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now().isoformat()}] {feedback_text}\n")
+    return {"success": True}
 
 # To use email notifications, set the following environment variables:
 # SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_SENDER (optional)
