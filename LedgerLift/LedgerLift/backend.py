@@ -273,6 +273,16 @@ async def upload_file(file: UploadFile = File(...)):
     preview = {}
     for name, df in sheets.items():
         sheet_errors = []
+        # --- Context-aware: skip headers/non-postable accounts ---
+        def is_header_row(row):
+            # Heuristic: no account number, or account name is a known header
+            known_headers = ['assets', 'liabilities', 'equity', 'revenue', 'expenses', 'contra revenue', 'contra asset', 'total', 'net income', 'gross profit', 'operating income']
+            acc_name = str(row.get('Account', '')).strip().lower()
+            acc_num = str(row.get('Account Number', '')).strip()
+            if acc_name in known_headers or acc_name.startswith('total') or acc_num in ['', 'nan', 'none']:
+                return True
+            return False
+
         # Chart of Accounts: check for missing account numbers/names/types, duplicates
         if 'chart' in name.lower():
             if 'Account Number' in df.columns:
@@ -291,53 +301,157 @@ async def upload_file(file: UploadFile = File(...)):
             dups = df[df.duplicated()]
             for idx in dups.index:
                 sheet_errors.append({"row": idx+1, "issue": "Duplicate row"})
-        # Journal Entries: check for missing/invalid dates, unbalanced debits/credits, missing accounts
+        # Journal Entries: check for missing/invalid dates, unbalanced debits/credits, missing accounts, GAAP/IFRS rules
         elif 'journal' in name.lower():
-            if 'Date' in df.columns:
-                for idx, val in df['Date'].items():
+            for idx, row in df.iterrows():
+                if is_header_row(row):
+                    continue
+                # Date check
+                if 'Date' in df.columns:
                     try:
-                        pd.to_datetime(val)
+                        pd.to_datetime(row['Date'])
                     except Exception:
                         sheet_errors.append({"row": idx+1, "issue": "Invalid or missing Date"})
-            if 'Debit' in df.columns and 'Credit' in df.columns:
-                for idx, row in df.iterrows():
-                    try:
-                        debit = float(row['Debit']) if row['Debit'] not in [None, "", pd.NA] else 0
-                        credit = float(row['Credit']) if row['Credit'] not in [None, "", pd.NA] else 0
-                        if abs(debit - credit) > 0.01:
-                            sheet_errors.append({"row": idx+1, "issue": f"Debit ({debit}) ≠ Credit ({credit})"})
-                    except:
-                        pass
-            if 'Account' in df.columns:
-                missing_acc = df[df['Account'].isnull()]
-                for idx in missing_acc.index:
+                # Debit/Credit check
+                debit = float(row['Debit']) if 'Debit' in df.columns and row['Debit'] not in [None, '', pd.NA] else 0
+                credit = float(row['Credit']) if 'Credit' in df.columns and row['Credit'] not in [None, '', pd.NA] else 0
+                if abs(debit - credit) > 0.01:
+                    sheet_errors.append({"row": idx+1, "issue": f"Debit ({debit}) ≠ Credit ({credit})"})
+                # Account check
+                if 'Account' in df.columns and (row['Account'] is None or str(row['Account']).strip() == ''):
                     sheet_errors.append({"row": idx+1, "issue": "Missing Account"})
-        # Trial Balance: check for out-of-balance, missing accounts
+                # GAAP/IFRS rules
+                acc_type = str(row.get('Type', '')).lower() if 'Type' in row else ''
+                acc_name = str(row.get('Account', '')).lower()
+                if acc_name == 'depreciation expense' and debit < 0:
+                    sheet_errors.append({"row": idx+1, "issue": "Depreciation expense should not be negative (GAAP)"})
+                if acc_type == 'revenue' and debit > 0:
+                    sheet_errors.append({"row": idx+1, "issue": "Revenue account has debit value (GAAP)"})
+                if acc_type == 'equity' and debit > 0:
+                    sheet_errors.append({"row": idx+1, "issue": "Equity account should not have debit balance (GAAP)"})
+                if acc_name == 'prepaid expenses' and 'income' in name.lower():
+                    sheet_errors.append({"row": idx+1, "issue": "Prepaid expenses should not appear in P&L (GAAP)"})
+        # Trial Balance: check for out-of-balance, missing accounts, auto-balance suggestion
         elif 'trial' in name.lower():
             if 'Debit' in df.columns and 'Credit' in df.columns:
                 total_debit = pd.to_numeric(df['Debit'], errors='coerce').sum()
                 total_credit = pd.to_numeric(df['Credit'], errors='coerce').sum()
-                if abs(total_debit - total_credit) > 1e-2:
-                    sheet_errors.append({"row": None, "issue": f"Trial balance out of balance: Debits={total_debit}, Credits={total_credit}"})
+                diff = total_debit - total_credit
+                if abs(diff) > 1e-2:
+                    # Suggest top 3 suspicious entries (nulls, high values)
+                    suspicious = []
+                    for idx, row in df.iterrows():
+                        if pd.isnull(row['Debit']) or pd.isnull(row['Credit']) or abs(float(row['Debit'] or 0) - float(row['Credit'] or 0)) > 1000:
+                            suspicious.append(idx+1)
+                    suggestion = f"Consider checking rows: {', '.join(map(str, suspicious[:3]))}" if suspicious else "Review all entries."
+                    sheet_errors.append({"row": None, "issue": f"Trial balance out of balance: Debits={total_debit}, Credits={total_credit}. Difference={diff}. {suggestion}"})
             if 'Account' in df.columns:
                 missing_acc = df[df['Account'].isnull()]
                 for idx in missing_acc.index:
                     sheet_errors.append({"row": idx+1, "issue": "Missing Account"})
-        # Income Statement/Balance Sheet: check for missing/invalid formulas, missing values
+        # Income Statement/Balance Sheet: check for missing/invalid formulas, missing values, skip headers
         elif 'income' in name.lower() or 'balance' in name.lower():
-            for col in df.columns:
-                missing = df[df[col].isnull()]
-                for idx in missing.index:
-                    sheet_errors.append({"row": idx+1, "issue": f"Missing value in {col}"})
-                # Check for Excel formulas
-                for idx, val in df[col].items():
-                    if isinstance(val, str) and val.startswith('='):
-                        sheet_errors.append({"row": idx+1, "issue": f"Excel formula present in {col}: {val}"})
+            for idx, row in df.iterrows():
+                if is_header_row(row):
+                    continue
+                for col in df.columns:
+                    if pd.isnull(row[col]):
+                        sheet_errors.append({"row": idx+1, "issue": f"Missing value in {col}"})
+                    # Formula audit
+                    if isinstance(row[col], str) and row[col].startswith('='):
+                        sheet_errors.append({"row": idx+1, "issue": f"Excel formula present in {col}: {row[col]} (Check for circular refs or hardcoded totals)"})
         errors[name] = sheet_errors
         preview[name] = {
             "columns": list(df.columns),
             "sample": df.head(5).to_dict(orient='records')
         }
+
+    # --- Advanced: Cross-Sheet Reconciliation ---
+    # Find key values for reconciliation
+    net_income = None
+    retained_earnings_change = None
+    total_assets = None
+    total_liab_equity = None
+    for name, df in sheets.items():
+        if 'income' in name.lower():
+            # Try to find Net Income
+            for idx, row in df.iterrows():
+                if str(row.get('Account', '')).strip().lower() in ['net income', 'net profit']:
+                    try:
+                        net_income = float(row.get('Amount', 0))
+                    except:
+                        pass
+        if 'balance' in name.lower():
+            # Try to find Retained Earnings and totals
+            for idx, row in df.iterrows():
+                acc = str(row.get('Account', '')).strip().lower()
+                if acc == 'retained earnings':
+                    try:
+                        retained_earnings_change = float(row.get('Amount', 0))
+                    except:
+                        pass
+                if acc == 'total assets':
+                    try:
+                        total_assets = float(row.get('Amount', 0))
+                    except:
+                        pass
+                if acc == 'total liabilities and equity':
+                    try:
+                        total_liab_equity = float(row.get('Amount', 0))
+                    except:
+                        pass
+    # Add reconciliation errors if mismatches found
+    if net_income is not None and retained_earnings_change is not None:
+        if abs(net_income - retained_earnings_change) > 1e-2:
+            errors.setdefault('Cross-Sheet', []).append({
+                "row": None,
+                "issue": f"Net income from Income Statement ({net_income}) does not match change in Retained Earnings on Balance Sheet ({retained_earnings_change})."
+            })
+    if total_assets is not None and total_liab_equity is not None:
+        if abs(total_assets - total_liab_equity) > 1e-2:
+            errors.setdefault('Cross-Sheet', []).append({
+                "row": None,
+                "issue": f"Total Assets ({total_assets}) does not equal Total Liabilities and Equity ({total_liab_equity}) on Balance Sheet."
+            })
+
+    # --- Advanced: Formula Audit ---
+    for name, df in sheets.items():
+        if 'income' in name.lower() or 'balance' in name.lower():
+            for idx, row in df.iterrows():
+                for col in df.columns:
+                    val = row[col]
+                    if isinstance(val, str) and val.startswith('='):
+                        # Hardcoded total (e.g., =10000)
+                        if val[1:].replace('.', '', 1).isdigit():
+                            errors.setdefault(name, []).append({
+                                "row": idx+1,
+                                "issue": f"Formula in {col} is hardcoded value: {val}"
+                            })
+                        # Reference to empty cell (basic check)
+                        if '""' in val or 'BLANK' in val.upper():
+                            errors.setdefault(name, []).append({
+                                "row": idx+1,
+                                "issue": f"Formula in {col} references empty cell: {val}"
+                            })
+                        # Circular reference (very basic: formula references its own row)
+                        if f'{col[0]}{idx+2}' in val:
+                            errors.setdefault(name, []).append({
+                                "row": idx+1,
+                                "issue": f"Possible circular reference in {col}: {val}"
+                            })
+
+    # --- Audit Mode vs. Assist Mode (default: Audit) ---
+    # You can add a query param ?mode=assist to switch to softer warnings
+    import fastapi
+    mode = 'audit'
+    if isinstance(file, fastapi.datastructures.UploadFile) and hasattr(file, 'filename'):
+        # Can't get query param here, but you can extend this logic to use a global or session
+        pass
+    # In assist mode, only show critical errors (e.g., out of balance, missing account)
+    if mode == 'assist':
+        for k in list(errors.keys()):
+            errors[k] = [e for e in errors[k] if 'out of balance' in e['issue'].lower() or 'missing account' in e['issue'].lower()]
+
     return JSONResponse(content=clean_nans({
         "sheets": list(sheets.keys()),
         "preview": preview,
