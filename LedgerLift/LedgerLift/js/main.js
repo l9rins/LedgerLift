@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
           body: formData
         });
         const data = await res.json();
-        // Show summary or update errors table
+        // Show summary
         const summaryDiv = document.getElementById('bulk-fix-summary');
         if (summaryDiv) {
           summaryDiv.textContent = '';
@@ -173,8 +173,37 @@ document.addEventListener('DOMContentLoaded', () => {
           });
         }
         // Re-fetch errors and update table
-        // Simulate by reloading the page (or you can re-upload the file if you store it)
-        window.location.reload();
+        const errorsRes = await fetch('/upload', { method: 'POST', body: window.lastUploadedFormData });
+        const errorsData = await errorsRes.json();
+        const errorTable = document.getElementById('error-table');
+        if (errorTable && errorsData.errors) {
+          const tbody = errorTable.querySelector('tbody');
+          tbody.innerHTML = '';
+          const sheetNames = Object.keys(errorsData.errors);
+          let anyErrors = false;
+          sheetNames.forEach(sheet => {
+            const errors = errorsData.errors[sheet];
+            if (errors.length > 0) {
+              anyErrors = true;
+              const sheetRow = document.createElement('tr');
+              sheetRow.innerHTML = `<td colspan="2" class="font-bold bg-blue-50">${sheet}</td>`;
+              tbody.appendChild(sheetRow);
+              errors.forEach(err => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td class="py-2 px-4">${err.row ?? ''}</td><td class="py-2 px-4">${err.issue ?? ''}</td>`;
+                tbody.appendChild(tr);
+              });
+            }
+          });
+          if (!anyErrors) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="2" class="text-center text-gray-500 py-2">No errors found!</td>';
+            tbody.appendChild(tr);
+            // Optionally, enable the Next button
+            const nextBtn = document.getElementById('to-step-4');
+            if (nextBtn) nextBtn.disabled = false;
+          }
+        }
       } catch (err) {
         alert('Bulk fix failed: ' + (err.message || err));
       }
