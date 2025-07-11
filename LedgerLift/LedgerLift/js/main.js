@@ -131,6 +131,54 @@ document.addEventListener('DOMContentLoaded', () => {
     toStep4Btn.addEventListener('click', () => showStep(3));
   }
 
+  // Bulk Fixes logic
+  const bulkFixBtn = document.getElementById('bulk-fix-btn');
+  if (bulkFixBtn) {
+    bulkFixBtn.addEventListener('click', async () => {
+      // Collect selected fixes
+      const fixes = [];
+      if (document.getElementById('fix-balance')?.checked) fixes.push('auto-balance');
+      if (document.getElementById('fix-missing')?.checked) fixes.push('fill-missing');
+      if (document.getElementById('fix-duplicates')?.checked) fixes.push('remove-duplicates');
+      // Get the current sheet (use the first sheet for now)
+      const errorTable = document.getElementById('error-table');
+      let sheet = null;
+      if (errorTable && errorTable.querySelector('tbody')) {
+        const firstSheetRow = errorTable.querySelector('tbody tr');
+        if (firstSheetRow && firstSheetRow.textContent) {
+          sheet = firstSheetRow.textContent.trim();
+        }
+      }
+      // Send to backend
+      try {
+        const formData = new FormData();
+        formData.append('fixes', fixes.join(','));
+        if (sheet) formData.append('sheet', sheet);
+        const res = await fetch('/bulk-fix', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        // Show summary or update errors table
+        const summaryDiv = document.getElementById('bulk-fix-summary');
+        if (summaryDiv) {
+          summaryDiv.textContent = '';
+          Object.keys(data).forEach(sheetName => {
+            const summary = data[sheetName].summary || [];
+            summary.forEach(line => {
+              const p = document.createElement('p');
+              p.textContent = `${sheetName}: ${line}`;
+              summaryDiv.appendChild(p);
+            });
+          });
+        }
+        // Optionally, update the errors table again (could re-fetch errors)
+      } catch (err) {
+        alert('Bulk fix failed: ' + (err.message || err));
+      }
+    });
+  }
+
   // Scroll to workflow
   window.scrollToWorkflow = function() {
     const workflow = document.getElementById('workflow');
